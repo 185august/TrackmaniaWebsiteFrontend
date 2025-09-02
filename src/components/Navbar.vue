@@ -1,7 +1,9 @@
 <script setup>
 import { RouterLink } from "vue-router";
-import { currentUser } from "../main.js";
 import logo from "../assets/img/logo.png";
+
+const currentUserString = localStorage.getItem("currentUser");
+const currentUser = JSON.parse(currentUserString);
 </script>
 
 <template>

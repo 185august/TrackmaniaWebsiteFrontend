@@ -20,7 +20,7 @@ const validateUbisoftName = async () => {
   try {
     console.log("Validating Ubisoft name:", formState.ubisoftName);
     const response = await axios.get(
-      `http://localhost:5190/api/OAuth2Account/GetAccountId?accountName=${formState.ubisoftName}`
+      `http://localhost:5190/api/OAuth2Account/GetAccountId?accountNames=${formState.ubisoftName}`
     );
     formState.ubisoftName = Object.keys(response.data)[0];
     formState.ubisoftUserId = response.data[formState.ubisoftName];

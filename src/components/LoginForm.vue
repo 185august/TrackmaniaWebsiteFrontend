@@ -3,7 +3,6 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import axios from "axios";
-import { currentUser } from "../main.js";
 
 const username = ref("");
 const password = ref("");
@@ -18,12 +17,14 @@ const handleLogin = async () => {
       password: password.value,
     });
     console.log(`data: ${response.data}`);
-    currentUser.id = response.data.id;
-    currentUser.username = response.data.username;
-    currentUser.ubisoftUserId = response.data.ubisoftUserId;
-    currentUser.ubisoftUsername = response.data.ubisoftUsername;
-    currentUser.isLoggedIn = true;
-    console.log("Current User:", currentUser);
+    const currentUser = {
+      username: response.data.username,
+      ubisoftUserId: response.data.ubisoftUserId,
+      ubisoftUsername: response.data.ubisoftUsername,
+      isLoggedIn: true,
+      comparisonNames: {},
+    };
+    localStorage.setItem("currentUser", JSON.stringify(currentUser));
     router.push("/Maps");
   } catch (error) {
     console.error("Login failed:", error);

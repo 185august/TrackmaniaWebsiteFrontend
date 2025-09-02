@@ -1,55 +1,57 @@
 <script setup>
 import { ref, reactive, computed } from "vue";
 import axios from "axios";
-import { currentUser } from "../main.js";
+import TimesTable from "./TimesTable.vue";
 
-const time = reactive({
-  timeData: [],
-  showTime: false,
-  error: null,
-});
 const showTime = ref(false);
 const timeData = ref([]);
 const error = ref(null);
 
-const timeMessage = computed(() => {
-  if (error.value) {
-    return `Error: ${error.value}`;
-  } else if (timeData.value.length > 0 && timeData.value[0].recordScore) {
-    let timeString = "";
-    const nameKeys = Object.keys(currentUser.comparisonNames);
-    timeString += `Your time ${timeData.value[0].recordScore.formatedTime}`;
-    for (let i = 1; i < timeData.value.length; i++) {
-      timeString += `\n${nameKeys[i - 1]}: ${
-        timeData.value[i].recordScore.formatedTime
-      }`;
-    }
-    return timeString;
-  } else {
-    return "No time data available.";
+const processMapTimes = (apiResponse, currentUser) => {
+  if (!apiResponse || !currentUser || !currentUser.comparisonNames) {
+    return [];
   }
-});
+
+  const reverseMap = {};
+  reverseMap[currentUser.ubisoftUserId] = currentUser.ubisoftUsername;
+
+  for (const name in currentUser.comparisonNames) {
+    const id = currentUser.comparisonNames[name];
+    reverseMap[id] = name;
+  }
+
+  const processedData = apiResponse.map((record) => {
+    const playerName = reverseMap[record.accountId];
+
+    return {
+      ...record,
+      name: playerName || "Unknown Player",
+    };
+  });
+  processedData.sort((a, b) => a.recordScore.time - b.recordScore.time);
+
+  return processedData;
+};
 
 const getUserTime = async (mapId) => {
   try {
     let accountsIdString = "";
+    const currentUserString = localStorage.getItem("currentUser");
+    const currentUser = JSON.parse(currentUserString);
     if (currentUser.comparisonNames == {}) {
       accountsIdString = currentUser.ubisoftUserId;
     } else {
       accountsIdString = currentUser.ubisoftUserId;
       const userKeys = Object.keys(currentUser.comparisonNames);
-      userKeys.forEach((user) => {
-        accountsIdString += `,${currentUser.comparisonNames[user]}`;
+      userKeys.forEach((u) => {
+        accountsIdString += `,${currentUser.comparisonNames[u]}`;
       });
     }
-    console.log(
-      `Fetching time for mapId: ${mapId} and accountIdList: ${currentUser.comparisonString}`
-    );
     const response = await axios.get(
       `http://localhost:5190/api/Map/GetMapRecord?mapId=${mapId}&accountIdList=${accountsIdString}`
     );
-    timeData.value = response.data;
-    console.log(time.timeData);
+    timeData.value = processMapTimes(response.data, currentUser);
+    console.log(timeData.value);
     showTime.value = true;
     error.value = null;
   } catch (error) {
@@ -81,10 +83,11 @@ const props = defineProps({
         <div
           v-if="showTime"
           @click="closePopup"
-          class="mt-4 absolute top-0 left-0 bg-black/10 w-full h-full flex justify-center items-center cursor-pointer"
+          class="mt-4 absolute top-0 left-0 bg-black/10 w-full h-full flex justify-center items-center cursor-pointer p-10"
         >
           <div @click.stop class="bg-white p-8 rounded-lg shadow-lg">
-            <p class="mt-2 text-sm text-gray-600">{{ timeMessage }}</p>
+            <!-- <p class="mt-2 text-sm text-gray-600">{{ timeMessage }}</p>-->
+            <TimesTable :timeData="timeData" />
           </div>
         </div>
       </teleport>

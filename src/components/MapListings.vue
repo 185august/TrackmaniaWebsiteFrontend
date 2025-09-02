@@ -4,7 +4,6 @@ import { useRouter } from "vue-router";
 import PulseLoader from "vue-spinner/src/PulseLoader.vue";
 import axios from "axios";
 import MapCard from "@/components/MapCard.vue";
-import { currentUser } from "../main.js";
 
 const state = reactive({
   maps: [],
@@ -16,6 +15,8 @@ const selection = reactive({
   season: "",
   year: null,
 });
+
+const comparisonString = ref();
 
 const handleSeasonAndYearSelection = async () => {
   state.haveSelectedSeasonAndYear = true;
@@ -35,18 +36,29 @@ const handleSeasonAndYearSelection = async () => {
 
 const validateUbisoftNames = async () => {
   try {
-    console.log("Validating Ubisoft name:", currentUser.comparisonString);
-    const requestNames = currentUser.comparisonString.trim();
+    const currentUserString = localStorage.getItem("currentUser");
+    const currentUser = JSON.parse(currentUserString);
+
+    if (!currentUser) {
+      console.error("User not logged in or data not found");
+      return;
+    }
+    console.log("Validating Ubisoft name:", comparisonString.value);
+    let requestNames = comparisonString.value;
+    const requestNamesCleaned = requestNames.replace(/\s+/g, "");
 
     const response = await axios.get(
-      `http://localhost:5190/api/OAuth2Account/GetAccountId?accountNames=${requestNames}`
+      `http://localhost:5190/api/OAuth2Account/GetAccountId?accountNames=${requestNamesCleaned}`
     );
     const names = Object.keys(response.data);
+
+    currentUser.comparisonNames = {};
 
     names.forEach((name) => {
       currentUser.comparisonNames[name] = response.data[name];
     });
     console.log(currentUser.comparisonNames);
+    localStorage.setItem("currentUser", JSON.stringify(currentUser));
   } catch (error) {
     console.error("Error validating Ubisoft name:", error);
   }
@@ -59,67 +71,85 @@ const validateUbisoftNames = async () => {
       <h2 class="text-3xl font-bold text-green-500 mb-6 text-center">
         Trackmania Campaign Maps
       </h2>
-      <div class="text-center mb-6">
-        <form @submit.prevent="handleSeasonAndYearSelection">
-          <label for="season" class="block text-gray-700 font-bold mb-2"
-            >Select a season</label
-          >
-          <select
-            v-model="selection.season"
-            id="season"
-            name="season"
-            class="border rounded py-2 px-3 w-30 text-center"
-            required
-          >
-            <option value="Winter">Winter</option>
-            <option value="Spring">Spring</option>
-            <option value="Summer">Summer</option>
-            <option value="Fall">Fall</option>
-          </select>
-          <label for="year" class="block text-gray-700 font-bold mb-2 mt-4"
-            >Select a year</label
-          >
-          <select
-            v-model="selection.year"
-            id="year"
-            name="year"
-            class="border rounded w-30 py-2 px-3 text-center"
-            required
-          >
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-            <option value="2025">2025</option>
-          </select>
-          <br />
-          <button
-            type="submit"
-            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline w-30 mt-4 mx-auto m-10"
-          >
-            Show maps
-          </button>
-        </form>
+
+      <div
+        class="flex flex-col md:flex-row gap-6 p-4 bg-gray-100 rounded-lg shadow-inner"
+      >
+        <div class="flex-1 bg-white p-6 rounded-lg shadow-md">
+          <h3 class="text-xl font-semibold text-gray-700 mb-4">Select Maps</h3>
+          <form @submit.prevent="handleSeasonAndYearSelection">
+            <div class="mb-4">
+              <label for="season" class="block text-gray-700 font-bold mb-2"
+                >Select a season</label
+              >
+              <select
+                v-model="selection.season"
+                id="season"
+                name="season"
+                class="w-full border rounded py-2 px-3 text-center"
+                required
+              >
+                <option value="Winter">Winter</option>
+                <option value="Spring">Spring</option>
+                <option value="Summer">Summer</option>
+                <option value="Fall">Fall</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label for="year" class="block text-gray-700 font-bold mb-2"
+                >Select a year</label
+              >
+              <select
+                v-model="selection.year"
+                id="year"
+                name="year"
+                class="w-full border rounded py-2 px-3 text-center"
+                required
+              >
+                <option value="2023">2023</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+              </select>
+            </div>
+            <button
+              type="submit"
+              class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline"
+            >
+              Show maps
+            </button>
+          </form>
+        </div>
+
+        <div class="flex-1 bg-white p-6 rounded-lg shadow-md">
+          <h3 class="text-xl font-semibold text-gray-700 mb-4">
+            Compare Players
+          </h3>
+          <div class="mb-4">
+            <label
+              for="comparisonString"
+              class="block text-gray-700 font-bold mb-2"
+            >
+              Enter usernames to compare your times to (separated by commas)
+            </label>
+            <input
+              type="text"
+              v-model="comparisonString"
+              id="comparisonString"
+              placeholder="user1, user2"
+              class="w-full border rounded py-2 px-3 mb-4"
+            />
+            <button
+              type="button"
+              @click="validateUbisoftNames"
+              class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline"
+            >
+              Submit names
+            </button>
+          </div>
+        </div>
       </div>
-      <div class="mb-4">
-        <label for="comparionString"
-          >Enter usernames to compare to seperated by commas</label
-        >
-        <br />
-        <input
-          type="text"
-          v-model="currentUser.comparisonString"
-          id="comparisonString"
-          placeholder="user1, user2, user3"
-          class="border rounded w-50 py-2 px-3 text-center mb-6"
-        />
-        <button
-          type="button"
-          @click="validateUbisoftNames"
-          class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline w-50 mt-4 mx-auto m-10"
-        >
-          Check if names are valid
-        </button>
-      </div>
-      <div>
+
+      <div class="mt-8">
         <div v-if="state.isLoading" class="text-center text-gray-500 py-6">
           <PulseLoader />
         </div>
