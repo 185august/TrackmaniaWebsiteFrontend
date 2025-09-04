@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed } from "vue";
+import { ref } from "vue";
 import axios from "axios";
 import TimesTable from "./TimesTable.vue";
 
@@ -33,10 +33,11 @@ const processMapTimes = (apiResponse, currentUser) => {
   return processedData;
 };
 
-const getUserTime = async (mapId) => {
+const getUserTime = async (mapId, mapUid) => {
   try {
     let accountsIdString = "";
-    const currentUserString = localStorage.getItem("currentUser");
+    const currentUserString = sessionStorage.getItem("currentUser");
+
     const currentUser = JSON.parse(currentUserString);
     if (currentUser.comparisonNames == {}) {
       accountsIdString = currentUser.ubisoftUserId;
@@ -47,11 +48,13 @@ const getUserTime = async (mapId) => {
         accountsIdString += `,${currentUser.comparisonNames[u]}`;
       });
     }
+    //const response = await axios.get(
+    //`/api/Map/GetMapTimeByIds?mapId=${mapId}&accountIdList=${accountsIdString}`
+    //);
     const response = await axios.get(
-      `http://localhost:5190/api/Map/GetMapRecord?mapId=${mapId}&accountIdList=${accountsIdString}`
+      `/api/Map/GetAllMapTimes?mapId=${mapId}&accountIdList=${accountsIdString}&mapUid=${mapUid}`
     );
     timeData.value = processMapTimes(response.data, currentUser);
-    console.log(timeData.value);
     showTime.value = true;
     error.value = null;
   } catch (error) {
@@ -74,7 +77,7 @@ const props = defineProps({
     <div class="pl-2">
       <h3 class="text-m font-semibold mb-2">{{ map.name }}</h3>
       <button
-        @click="getUserTime(map.mapId)"
+        @click="getUserTime(map.mapId, map.mapUid)"
         class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full w-40 focus:outline-none focus:shadow-outline"
       >
         Get map time/s

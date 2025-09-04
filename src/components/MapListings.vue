@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, computed } from "vue";
 import { useRouter } from "vue-router";
 import PulseLoader from "vue-spinner/src/PulseLoader.vue";
 import axios from "axios";
@@ -18,12 +18,21 @@ const selection = reactive({
 
 const comparisonString = ref();
 
+const comparisonError = ref();
+
+const setComparisonError = (errorMessage) => {
+  comparisonError.value = errorMessage;
+  setTimeout(() => {
+    comparisonError.value = "";
+  }, 2000);
+};
+
 const handleSeasonAndYearSelection = async () => {
   state.haveSelectedSeasonAndYear = true;
   state.isLoading = true;
   try {
     const response = await axios.get(
-      `http://localhost:5190/api/Map/GetMapsByYearAndSeason?year=${selection.year}&season=${selection.season}`
+      `/api/Map/GetMapsByYearAndSeason?year=${selection.year}&season=${selection.season}`
     );
     state.maps = response.data;
     console.log(state.maps);
@@ -36,7 +45,7 @@ const handleSeasonAndYearSelection = async () => {
 
 const validateUbisoftNames = async () => {
   try {
-    const currentUserString = localStorage.getItem("currentUser");
+    const currentUserString = sessionStorage.getItem("currentUser");
     const currentUser = JSON.parse(currentUserString);
 
     if (!currentUser) {
@@ -48,7 +57,7 @@ const validateUbisoftNames = async () => {
     const requestNamesCleaned = requestNames.replace(/\s+/g, "");
 
     const response = await axios.get(
-      `http://localhost:5190/api/OAuth2Account/GetAccountId?accountNames=${requestNamesCleaned}`
+      `/api/OAuth2Account/GetAccountId?accountNames=${requestNamesCleaned}`
     );
     const names = Object.keys(response.data);
 
@@ -57,10 +66,17 @@ const validateUbisoftNames = async () => {
     names.forEach((name) => {
       currentUser.comparisonNames[name] = response.data[name];
     });
-    console.log(currentUser.comparisonNames);
-    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+    if (Object.keys(currentUser.comparisonNames).length === 0) {
+      setComparisonError("Error validating Ubisoft name");
+      return;
+    }
+    console.log(Object.keys(currentUser.comparisonNames));
+    sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
+
+    setComparisonError("successfully added users");
   } catch (error) {
     console.error("Error validating Ubisoft name:", error);
+    setComparisonError("Error validating Ubisoft name");
   }
 };
 </script>
@@ -145,6 +161,9 @@ const validateUbisoftNames = async () => {
             >
               Submit names
             </button>
+            <p v-if="comparisonError">
+              {{ comparisonError }}
+            </p>
           </div>
         </div>
       </div>

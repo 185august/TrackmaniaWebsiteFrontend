@@ -12,7 +12,7 @@ const toast = useToast();
 
 const handleLogin = async () => {
   try {
-    const response = await axios.post("http://localhost:5190/api/Auth/login", {
+    const response = await axios.post("/api/Auth/login", {
       username: username.value,
       password: password.value,
     });
@@ -24,7 +24,7 @@ const handleLogin = async () => {
       isLoggedIn: true,
       comparisonNames: {},
     };
-    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+    sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
     router.push("/Maps");
   } catch (error) {
     console.error("Login failed:", error);

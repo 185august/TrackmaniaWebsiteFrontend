@@ -20,7 +20,7 @@ const validateUbisoftName = async () => {
   try {
     console.log("Validating Ubisoft name:", formState.ubisoftName);
     const response = await axios.get(
-      `http://localhost:5190/api/OAuth2Account/GetAccountId?accountNames=${formState.ubisoftName}`
+      `/api/OAuth2Account/GetAccountId?accountNames=${formState.ubisoftName}`
     );
     formState.ubisoftName = Object.keys(response.data)[0];
     formState.ubisoftUserId = response.data[formState.ubisoftName];
@@ -46,15 +46,12 @@ const validateUbisoftName = async () => {
 
 const handleRegister = async () => {
   try {
-    const response = await axios.post(
-      "http://localhost:5190/api/Auth/register",
-      {
-        username: formState.username,
-        password: formState.password,
-        ubisoftUsername: formState.ubisoftName,
-        ubisoftUserId: formState.ubisoftUserId,
-      }
-    );
+    const response = await axios.post("/api/Auth/register", {
+      username: formState.username,
+      password: formState.password,
+      ubisoftUsername: formState.ubisoftName,
+      ubisoftUserId: formState.ubisoftUserId,
+    });
     console.log(response.data);
     router.push("/");
   } catch (error) {

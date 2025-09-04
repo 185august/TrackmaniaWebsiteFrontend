@@ -1,3 +1,3 @@
 export function isLoggedIn() {
-    return localStorage.getItem('currentUser') !== null;
+    return sessionStorage.getItem('currentUser') !== null;
 }
