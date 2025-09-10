@@ -35,11 +35,48 @@ const handleSeasonAndYearSelection = async () => {
       `/api/Map/GetMapsByYearAndSeason?year=${selection.year}&season=${selection.season}`
     );
     state.maps = response.data;
+    console.log(response.data);
     console.log(state.maps);
   } catch (error) {
     console.error("Failed to fetch maps:", error);
   } finally {
     state.isLoading = false;
+  }
+};
+
+const newValidateUbisoftNames = async () => {
+  try {
+    const currentUserString = sessionStorage.getItem("currentUser");
+    const currentUser = JSON.parse(currentUserString);
+
+    if (!currentUser) {
+      console.error("User not logged in or data not found");
+      return;
+    }
+
+    if (!comparisonString.value || typeof comparisonString.value !== "string") {
+      setComparisonError("Please enter at least one username.");
+      return;
+    }
+
+    console.log("Validating Ubisoft name:", comparisonString.value);
+    let requestNames =
+      currentUser.ubisoftUsername + "," + comparisonString.value;
+    const requestNamesCleaned = requestNames.replace(/\s+/g, "");
+    const response = await axios.post(
+      `/api/UpdateComparisonPlayers/UpdateComparisonPlayers?playerIdsCommaSeperated=${requestNamesCleaned}`
+    );
+    console.log(response.data);
+    if (response.data.success) {
+      currentUser.comparisonNames = response.data.comparisonNames || {};
+      sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
+      setComparisonError("Successfully added users");
+    } else {
+      setComparisonError("Error validating Ubisoft name");
+    }
+  } catch (error) {
+    console.error("Error validating Ubisoft name:", error);
+    setComparisonError("Error validating Ubisoft name");
   }
 };
 
@@ -84,7 +121,7 @@ const validateUbisoftNames = async () => {
 <template>
   <section class="bg-blue-50 px-4 py-10">
     <div class="container-xl lg:container m-auto">
-      <h2 class="text-3xl font-bold text-green-500 mb-6 text-center">
+      <h2 class="text-3xl font-bold text-blue-400 mb-6 text-center">
         Trackmania Campaign Maps
       </h2>
 
@@ -156,7 +193,7 @@ const validateUbisoftNames = async () => {
             />
             <button
               type="button"
-              @click="validateUbisoftNames"
+              @click="newValidateUbisoftNames"
               class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline"
             >
               Submit names
@@ -168,11 +205,11 @@ const validateUbisoftNames = async () => {
         </div>
       </div>
 
-      <div class="mt-8">
+      <div class="mt-10">
         <div v-if="state.isLoading" class="text-center text-gray-500 py-6">
           <PulseLoader />
         </div>
-        <div v-else class="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div v-else class="grid grid-cols-1 md:grid-cols-5 gap-5">
           <MapCard v-for="map in state.maps" :key="map.id" :map="map" />
         </div>
       </div>
