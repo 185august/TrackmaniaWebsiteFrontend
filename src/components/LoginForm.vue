@@ -1,14 +1,15 @@
 <script setup>
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { useToast } from "vue-toastification";
 import axios from "axios";
+import { setErrorMessage } from "@/utils/utuil.js";
 
 const username = ref("");
 const password = ref("");
 
 const router = useRouter();
-const toast = useToast();
+
+const errorMessage = ref(null);
 
 const handleLogin = async () => {
   try {
@@ -27,10 +28,21 @@ const handleLogin = async () => {
     sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
     router.push("/Maps");
   } catch (error) {
-    console.error("Login failed:", error);
-    toast.error("Login failed. Please check your credentials and try again.");
+    setErrorMessage(
+      "Login failed. Please check your credentials.",
+      errorMessage
+    );
   }
 };
+onMounted(() => {
+  const currentUserJson = sessionStorage.getItem("currentUser");
+  if (currentUserJson) {
+    const currentUser = JSON.parse(currentUserJson);
+    if (currentUser.isLoggedIn) {
+      router.push("/Maps");
+    }
+  }
+});
 </script>
 
 <template>
@@ -68,6 +80,9 @@ const handleLogin = async () => {
       >
         Login
       </button>
+      <p v-if="errorMessage" class="text-red-500 text-sm mt-4">
+        {{ errorMessage }}
+      </p>
     </form>
   </div>
 </template>

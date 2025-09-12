@@ -2,60 +2,56 @@
 import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
+import { setErrorMessage } from "@/utils/utuil.js";
+
+const errorMessage = ref(null);
 
 const formState = reactive({
   username: "",
   password: "",
   passwordConfirm: "",
-  ubisoftName: "",
-  ubisoftUserId: null,
-  isUbisoftNameValid: null,
-  ubisoftErrorMessage: "",
-  errorMessage: "",
+  playerProfile: {},
+  isUbisoftNameValid: false,
 });
 
 const router = useRouter();
 
 const validateUbisoftName = async () => {
   try {
-    console.log("Validating Ubisoft name:", formState.ubisoftName);
-    const response = await axios.get(
-      `/api/OAuth2Account/GetAccountId?accountNames=${formState.ubisoftName}`
+    let requestName = formState.ubisoftName;
+    const requestNameCleaned = requestName.replace(/\s+/g, "");
+    const response = await axios.post(
+      `/api/PlayerAccounts/GetAndUpdatePlayerAccounts?playerIdsCommaSeperated=${requestNameCleaned}`
     );
-    formState.ubisoftName = Object.keys(response.data)[0];
-    formState.ubisoftUserId = response.data[formState.ubisoftName];
-    console.log(
-      `name: ${formState.ubisoftName}, id: ${formState.ubisoftUserId}`
-    );
-    if (
-      formState.ubisoftUserId == undefined ||
-      formState.ubisoftName == undefined
-    ) {
+    formState.playerProfile = response.data;
+    console.log("Formsate", formState.playerProfile);
+
+    if (formState.playerProfile.value == 0 || formState.playerProfile == {}) {
       formState.isUbisoftNameValid = false;
-      return (formState.ubisoftErrorMessage =
-        "Ubisoft name is not valid. Please check and try again.");
+      setErrorMessage("Ubisoft name is not valid", errorMessage);
+      return;
     } else {
       formState.isUbisoftNameValid = true;
-      return (formState.ubisoftErrorMessage = "Ubisoft name is valid");
+      setErrorMessage("Ubisoft name is valid", errorMessage);
     }
   } catch (error) {
-    console.error("Error validating Ubisoft name:", error);
+    setErrorMessage("Ubisoft name is not valid", errorMessage);
     formState.isUbisoftNameValid = false;
   }
 };
 
 const handleRegister = async () => {
   try {
+    const playerProfile = formState.playerProfile;
     const response = await axios.post("/api/Auth/register", {
       username: formState.username,
       password: formState.password,
-      ubisoftUsername: formState.ubisoftName,
-      ubisoftUserId: formState.ubisoftUserId,
+      playerProfile: playerProfile[0],
     });
     console.log(response.data);
     router.push("/");
   } catch (error) {
-    console.error("Registration failed:", error);
+    setErrorMessage("Username not valid, please try again", errorMessage);
   }
 };
 </script>
@@ -64,7 +60,7 @@ const handleRegister = async () => {
   <div
     class="login-form bg-white px-6 py-8 mb-4 shadow-md rounded-md border m-4 md:m-0"
   >
-    <h2 class="text-3xl text-center font-semibold mb-6">Login</h2>
+    <h2 class="text-3xl text-center font-semibold mb-6">Register</h2>
     <form @submit.prevent="handleRegister">
       <div class="mb-4">
         <label class="block text-gray-700 font-bold mb-2" for="username"
@@ -89,7 +85,7 @@ const handleRegister = async () => {
           v-model="formState.password"
         />
       </div>
-      <div class="mb-4">
+      <div v-if="formState.isUbisoftNameValid === false" class="mb-4">
         <label class="block text-gray-700 font-bold mb-2" for="password"
           >Enter your Ubisoft username</label
         >
@@ -107,14 +103,9 @@ const handleRegister = async () => {
           >
             Validate Ubisoft Name
           </button>
-          <div
-            v-if="formState.ubisoftErrorMessage != null"
-            class="text-red-500 text-sm mt-2"
-          >
-            {{ formState.ubisoftErrorMessage }}
-          </div>
         </div>
       </div>
+
       <div v-if="formState.isUbisoftNameValid === true">
         <button
           type="submit"
@@ -123,6 +114,9 @@ const handleRegister = async () => {
           Register
         </button>
       </div>
+      <p v-if="errorMessage" class="text-red-500 text-sm mt-4">
+        {{ errorMessage }}
+      </p>
     </form>
   </div>
 </template>

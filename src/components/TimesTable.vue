@@ -18,7 +18,7 @@ const props = defineProps({
         <tr>
           <th class="text-left px-4 py-2 text-4xl">Player Name</th>
           <th class="text-left px-4 py-2 text-4xl">Time</th>
-          <th class="text-left px-4 py-2 text-4xl">Respawn Count</th>
+          <th class="text-left px-4 py-2 text-4xl">Medal</th>
         </tr>
       </thead>
       <tbody>
@@ -28,7 +28,7 @@ const props = defineProps({
             {{ record.recordScore.formatedTime }}
           </td>
           <td class="px-4 py-2 text-2xl">
-            {{ record.recordScore.respawnCount }}
+            {{ record.medalText }}
           </td>
         </tr>
       </tbody>

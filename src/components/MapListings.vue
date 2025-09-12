@@ -1,9 +1,9 @@
 <script setup>
 import { ref, reactive, computed } from "vue";
-import { useRouter } from "vue-router";
 import PulseLoader from "vue-spinner/src/PulseLoader.vue";
 import axios from "axios";
 import MapCard from "@/components/MapCard.vue";
+import { setErrorMessage, GetCurrentUser } from "@/utils/utuil.js";
 
 const state = reactive({
   maps: [],
@@ -16,16 +16,13 @@ const selection = reactive({
   year: null,
 });
 
+const seasonOptions = ["Winter", "Spring", "Summer", "Fall"];
+const yearOptions = [2023, 2024, 2025];
+
 const comparisonString = ref();
 
 const comparisonError = ref();
-
-const setComparisonError = (errorMessage) => {
-  comparisonError.value = errorMessage;
-  setTimeout(() => {
-    comparisonError.value = "";
-  }, 2000);
-};
+const mapSelectionError = ref();
 
 const handleSeasonAndYearSelection = async () => {
   state.haveSelectedSeasonAndYear = true;
@@ -35,27 +32,32 @@ const handleSeasonAndYearSelection = async () => {
       `/api/Map/GetMapsByYearAndSeason?year=${selection.year}&season=${selection.season}`
     );
     state.maps = response.data;
-    console.log(response.data);
-    console.log(state.maps);
+    if (response.status != 200) {
+      setErrorMessage(response.data, mapSelectionError);
+      state.maps = [];
+      return;
+    }
+    setErrorMessage("success", mapSelectionError);
   } catch (error) {
-    console.error("Failed to fetch maps:", error);
+    setErrorMessage(
+      "Could not fetch maps for the selected season and year",
+      mapSelectionError
+    );
   } finally {
     state.isLoading = false;
   }
 };
 
-const newValidateUbisoftNames = async () => {
+const validateUbisoftNames = async () => {
   try {
-    const currentUserString = sessionStorage.getItem("currentUser");
-    const currentUser = JSON.parse(currentUserString);
+    const currentUser = GetCurrentUser();
 
     if (!currentUser) {
-      console.error("User not logged in or data not found");
       return;
     }
 
     if (!comparisonString.value || typeof comparisonString.value !== "string") {
-      setComparisonError("Please enter at least one username.");
+      setErrorMessage("Please enter at least one username.");
       return;
     }
 
@@ -64,56 +66,18 @@ const newValidateUbisoftNames = async () => {
       currentUser.ubisoftUsername + "," + comparisonString.value;
     const requestNamesCleaned = requestNames.replace(/\s+/g, "");
     const response = await axios.post(
-      `/api/UpdateComparisonPlayers/UpdateComparisonPlayers?playerIdsCommaSeperated=${requestNamesCleaned}`
+      `/api/PlayerAccounts/GetAndUpdatePlayerAccounts?playerIdsCommaSeperated=${requestNamesCleaned}`
     );
     console.log(response.data);
-    if (response.data.success) {
-      currentUser.comparisonNames = response.data.comparisonNames || {};
+    if (response.status === 200) {
+      currentUser.comparisonNames = response.data;
       sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
-      setComparisonError("Successfully added users");
+      setErrorMessage("Successfully added users", comparisonError);
     } else {
-      setComparisonError("Error validating Ubisoft name");
+      setErrorMessage("Error validating Ubisoft name", comparisonError);
     }
   } catch (error) {
-    console.error("Error validating Ubisoft name:", error);
-    setComparisonError("Error validating Ubisoft name");
-  }
-};
-
-const validateUbisoftNames = async () => {
-  try {
-    const currentUserString = sessionStorage.getItem("currentUser");
-    const currentUser = JSON.parse(currentUserString);
-
-    if (!currentUser) {
-      console.error("User not logged in or data not found");
-      return;
-    }
-    console.log("Validating Ubisoft name:", comparisonString.value);
-    let requestNames = comparisonString.value;
-    const requestNamesCleaned = requestNames.replace(/\s+/g, "");
-
-    const response = await axios.get(
-      `/api/OAuth2Account/GetAccountId?accountNames=${requestNamesCleaned}`
-    );
-    const names = Object.keys(response.data);
-
-    currentUser.comparisonNames = {};
-
-    names.forEach((name) => {
-      currentUser.comparisonNames[name] = response.data[name];
-    });
-    if (Object.keys(currentUser.comparisonNames).length === 0) {
-      setComparisonError("Error validating Ubisoft name");
-      return;
-    }
-    console.log(Object.keys(currentUser.comparisonNames));
-    sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
-
-    setComparisonError("successfully added users");
-  } catch (error) {
-    console.error("Error validating Ubisoft name:", error);
-    setComparisonError("Error validating Ubisoft name");
+    setErrorMessage("Error validating Ubisoft name", comparisonError);
   }
 };
 </script>
@@ -142,10 +106,13 @@ const validateUbisoftNames = async () => {
                 class="w-full border rounded py-2 px-3 text-center"
                 required
               >
-                <option value="Winter">Winter</option>
-                <option value="Spring">Spring</option>
-                <option value="Summer">Summer</option>
-                <option value="Fall">Fall</option>
+                <option
+                  v-for="value in seasonOptions"
+                  :key="value"
+                  :value="value"
+                >
+                  {{ value }}
+                </option>
               </select>
             </div>
             <div class="mb-4">
@@ -159,9 +126,13 @@ const validateUbisoftNames = async () => {
                 class="w-full border rounded py-2 px-3 text-center"
                 required
               >
-                <option value="2023">2023</option>
-                <option value="2024">2024</option>
-                <option value="2025">2025</option>
+                <option
+                  v-for="value in yearOptions"
+                  :key="value"
+                  :value="value"
+                >
+                  {{ value }}
+                </option>
               </select>
             </div>
             <button
@@ -171,6 +142,7 @@ const validateUbisoftNames = async () => {
               Show maps
             </button>
           </form>
+          <p v-if="mapSelectionError">{{ mapSelectionError }}</p>
         </div>
 
         <div class="flex-1 bg-white p-6 rounded-lg shadow-md">
@@ -193,7 +165,7 @@ const validateUbisoftNames = async () => {
             />
             <button
               type="button"
-              @click="newValidateUbisoftNames"
+              @click="validateUbisoftNames"
               class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline"
             >
               Submit names

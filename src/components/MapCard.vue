@@ -6,57 +6,19 @@ import TimeChart from "./TimeChart.vue";
 
 const showTime = ref(false);
 const timeData = ref([]);
-const error = ref(null);
+const errorMessage = ref(null);
 const chartData = ref(null);
-
-const processMapTimes = (apiResponse, currentUser) => {
-  if (!apiResponse || !currentUser || !currentUser.comparisonNames) {
-    return [];
-  }
-
-  const reverseMap = {};
-  reverseMap[currentUser.ubisoftUserId] = currentUser.ubisoftUsername;
-
-  for (const name in currentUser.comparisonNames) {
-    const id = currentUser.comparisonNames[name];
-    reverseMap[id] = name;
-  }
-
-  const processedData = apiResponse.map((record) => {
-    const playerName = reverseMap[record.accountId];
-
-    return {
-      ...record,
-      name: playerName || "World Record",
-    };
-  });
-  processedData.sort((a, b) => a.recordScore.time - b.recordScore.time);
-
-  return processedData;
-};
 
 const getUserTime = async (mapId, mapUid) => {
   try {
-    let accountsIdString = "";
-    const currentUserString = sessionStorage.getItem("currentUser");
+    const currentUserJson = sessionStorage.getItem("currentUser");
+    const currentUser = JSON.parse(currentUserJson);
 
-    const currentUser = JSON.parse(currentUserString);
-    if (currentUser.comparisonNames == {}) {
-      accountsIdString = currentUser.ubisoftUserId;
-    } else {
-      accountsIdString = currentUser.ubisoftUserId;
-      const userKeys = Object.keys(currentUser.comparisonNames);
-      userKeys.forEach((u) => {
-        accountsIdString += `,${currentUser.comparisonNames[u]}`;
-      });
-    }
-
-    const response = await axios.get(
-      `/api/MapTime/GetAllMapTimes?mapId=${mapId}&accountIdList=${accountsIdString}&mapUid=${mapUid}`
+    const response = await axios.post(
+      `/api/MapTime/GetAllMapTimes?mapId=${mapId}&mapUid=${mapUid}`,
+      currentUser.comparisonNames
     );
-    console.log(response.data);
-    timeData.value = processMapTimes(response.data, currentUser);
-
+    timeData.value = response.data;
     chartData.value = {
       labels: timeData.value.map((record) => record.name),
       datasets: [
@@ -67,12 +29,10 @@ const getUserTime = async (mapId, mapUid) => {
         },
       ],
     };
-    console.log(timeData.value);
     showTime.value = true;
-    error.value = null;
+    errorMessage.value = null;
   } catch (error) {
-    console.error("Failed to fetch user time:", error);
-    error.value = "Failed to fetch user time";
+    errorMessage.value = "Failed to fetch times";
   }
 };
 
@@ -98,6 +58,7 @@ const props = defineProps({
         Get map times
       </button>
       <teleport to="body">
+        <p v-if="errorMessage != null"></p>
         <div
           v-if="showTime"
           @click="closePopup"
