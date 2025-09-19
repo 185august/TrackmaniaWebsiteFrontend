@@ -1,4 +1,4 @@
-# Trackmania Stats Frontend
+# Trackmania Map times Frontend
 
 This is the frontend for a web application designed for Trackmania players. It allows users to track their performance on official campaign maps, compare their times with other players, and visualize the data.
 The backend for this project can be found [here](https://github.com/185august/TrackmaniaProjectAPI)
