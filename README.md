@@ -60,4 +60,4 @@ This project served as a great learning experience, particularly in the followin
 
 - **Tailwind CSS**: This was my first time using a CSS framework. I learned how to use Tailwind CSS to style my website.
 
-- **Node Package Manager (npm)**: I became familiar with using `npm` to manage project dependencies and run essential scripts for development, building, and previewing the application.
+- **Node Package Manager (npm)**: I became familiar with using `npm` to manage project dependencies and run scripts for development, building, and previewing the application.
