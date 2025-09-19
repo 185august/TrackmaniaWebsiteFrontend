@@ -29,7 +29,7 @@ The backend for this project can be found [here](https://github.com/185august/Tr
 
 1.  Clone the repository:
     ```sh
-    git clone <your-repository-url>
+    git clone https://github.com/185august/TrackmaniaWebsiteFrontend.git
     ```
 2.  Navigate to the project directory:
     ```sh
