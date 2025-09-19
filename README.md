@@ -58,6 +58,6 @@ This project served as a great learning experience, particularly in the followin
 
 - **API Integration with Axios**: I learned how to use Axios to make asynchronous HTTP requests to a backend service, handle responses, and manage the data flow within the application.
 
-- **Utility-First CSS with Tailwind CSS**: This was my first time using a CSS framework. I learned how to use Tailwind CSS to style my website.
+- **Tailwind CSS**: This was my first time using a CSS framework. I learned how to use Tailwind CSS to style my website.
 
 - **Node Package Manager (npm)**: I became familiar with using `npm` to manage project dependencies and run essential scripts for development, building, and previewing the application.
