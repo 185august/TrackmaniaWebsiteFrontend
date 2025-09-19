@@ -13,7 +13,14 @@ const getUserTime = async (mapId, mapUid) => {
   try {
     const currentUserJson = sessionStorage.getItem("currentUser");
     const currentUser = JSON.parse(currentUserJson);
-
+    if (!currentUser || !currentUser.isLoggedIn) {
+      errorMessage.value = "Error getting current user";
+      return;
+    }
+    currentUser.comparisonNames.push({
+      ubisoftUserId: currentUser.ubisoftUserId,
+      ubisoftUsername: currentUser.ubisoftUsername,
+    });
     const response = await axios.post(
       `/api/MapTime/GetAllMapTimes?mapId=${mapId}&mapUid=${mapUid}`,
       currentUser.comparisonNames

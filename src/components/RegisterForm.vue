@@ -3,6 +3,7 @@ import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import { setErrorMessage } from "@/utils/utuil.js";
+import { validateUbisoftName } from "@/utils/utuil.js";
 
 const errorMessage = ref(null);
 
@@ -10,43 +11,40 @@ const formState = reactive({
   username: "",
   password: "",
   passwordConfirm: "",
+  ubisoftName: "",
   playerProfile: {},
   isUbisoftNameValid: false,
 });
 
 const router = useRouter();
 
-const validateUbisoftName = async () => {
+const getUbisoftProfile = async () => {
   try {
-    let requestName = formState.ubisoftName;
-    const requestNameCleaned = requestName.replace(/\s+/g, "");
-    const response = await axios.post(
-      `/api/PlayerAccounts/GetAndUpdatePlayerAccounts?playerIdsCommaSeperated=${requestNameCleaned}`
+    const ubisoftProfile = await validateUbisoftName(
+      formState.ubisoftName,
+      errorMessage
     );
-    formState.playerProfile = response.data;
-    console.log("Formsate", formState.playerProfile);
-
-    if (formState.playerProfile.value == 0 || formState.playerProfile == {}) {
+    if (!ubisoftProfile) {
       formState.isUbisoftNameValid = false;
-      setErrorMessage("Ubisoft name is not valid", errorMessage);
       return;
-    } else {
-      formState.isUbisoftNameValid = true;
-      setErrorMessage("Ubisoft name is valid", errorMessage);
     }
+    formState.playerProfile = ubisoftProfile[0];
+    formState.isUbisoftNameValid = true;
   } catch (error) {
-    setErrorMessage("Ubisoft name is not valid", errorMessage);
     formState.isUbisoftNameValid = false;
   }
 };
 
 const handleRegister = async () => {
   try {
-    const playerProfile = formState.playerProfile;
+    if (!formState.isUbisoftNameValid) {
+      setErrorMessage("Please validate your Ubisoft name first", errorMessage);
+      return;
+    }
     const response = await axios.post("/api/Auth/register", {
       username: formState.username,
       password: formState.password,
-      playerProfile: playerProfile[0],
+      playerProfile: formState.playerProfile,
     });
     console.log(response.data);
     router.push("/");
@@ -98,7 +96,7 @@ const handleRegister = async () => {
         <div class="mb-4">
           <button
             type="button"
-            @click="validateUbisoftName()"
+            @click="getUbisoftProfile()"
             class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full w-full focus:outline-none focus:shadow-outline"
           >
             Validate Ubisoft Name

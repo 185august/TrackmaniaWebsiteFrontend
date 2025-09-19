@@ -17,7 +17,6 @@ const handleLogin = async () => {
       username: username.value,
       password: password.value,
     });
-    console.log(`data: ${response.data}`);
     const currentUser = {
       username: response.data.username,
       ubisoftUserId: response.data.ubisoftUserId,
@@ -29,7 +28,7 @@ const handleLogin = async () => {
     router.push("/Maps");
   } catch (error) {
     setErrorMessage(
-      "Login failed. Please check your credentials.",
+      error.response.data || "Login failed. Please try again.",
       errorMessage
     );
   }

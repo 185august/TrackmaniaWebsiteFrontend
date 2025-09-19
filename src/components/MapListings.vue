@@ -3,7 +3,11 @@ import { ref, reactive, computed } from "vue";
 import PulseLoader from "vue-spinner/src/PulseLoader.vue";
 import axios from "axios";
 import MapCard from "@/components/MapCard.vue";
-import { setErrorMessage, GetCurrentUser } from "@/utils/utuil.js";
+import {
+  setErrorMessage,
+  GetCurrentUser,
+  validateUbisoftName,
+} from "@/utils/utuil.js";
 
 const state = reactive({
   maps: [],
@@ -48,36 +52,33 @@ const handleSeasonAndYearSelection = async () => {
   }
 };
 
-const validateUbisoftNames = async () => {
-  try {
-    const currentUser = GetCurrentUser();
+const getUbisoftNames = async () => {
+  const currentUser = GetCurrentUser();
 
-    if (!currentUser) {
-      return;
-    }
+  if (!currentUser) {
+    return;
+  }
 
-    if (!comparisonString.value || typeof comparisonString.value !== "string") {
-      setErrorMessage("Please enter at least one username.");
-      return;
-    }
+  // if (!comparisonString.value || typeof comparisonString.value !== "string") {
+  //   setErrorMessage("Please enter at least one username.");
+  //   return;
+  // }
 
-    console.log("Validating Ubisoft name:", comparisonString.value);
-    let requestNames =
-      currentUser.ubisoftUsername + "," + comparisonString.value;
-    const requestNamesCleaned = requestNames.replace(/\s+/g, "");
-    const response = await axios.post(
-      `/api/PlayerAccounts/GetAndUpdatePlayerAccounts?playerIdsCommaSeperated=${requestNamesCleaned}`
-    );
-    console.log(response.data);
-    if (response.status === 200) {
-      currentUser.comparisonNames = response.data;
-      sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
-      setErrorMessage("Successfully added users", comparisonError);
-    } else {
-      setErrorMessage("Error validating Ubisoft name", comparisonError);
-    }
-  } catch (error) {
-    setErrorMessage("Error validating Ubisoft name", comparisonError);
+  //console.log("Validating Ubisoft name:", comparisonString.value);
+  // let requestNames =
+  //   currentUser.ubisoftUsername + "," + comparisonString.value;
+  // const requestNamesCleaned = requestNames.replace(/\s+/g, "");
+  // const response = await axios.post(
+  //   `/api/PlayerAccounts/GetAndUpdatePlayerAccounts?ubisoftUsernamesCommaSeperated=${requestNamesCleaned}`
+  // );
+  // console.log(response.data);
+  const response = await validateUbisoftName(
+    comparisonString.value,
+    comparisonError
+  );
+  if (response) {
+    currentUser.comparisonNames = response;
+    sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
   }
 };
 </script>
@@ -165,7 +166,7 @@ const validateUbisoftNames = async () => {
             />
             <button
               type="button"
-              @click="validateUbisoftNames"
+              @click="getUbisoftNames"
               class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline"
             >
               Submit names
